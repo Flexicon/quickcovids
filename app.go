@@ -7,6 +7,7 @@ import (
 
 	"github.com/flexicon/quickcovids/covid"
 	"github.com/getlantern/systray"
+	"golang.org/x/text/message"
 )
 
 // App represents the main application state
@@ -122,7 +123,8 @@ func (a *App) listenForCountrySelection(country string, item *systray.MenuItem) 
 }
 
 func (a *App) updateUI() {
-	systray.SetTitle(fmt.Sprintf("😷 %d  ☠️ %d 🥳 %d", a.data.Active, a.data.Deaths, a.data.Recovered))
+	p := message.NewPrinter(message.MatchLanguage("en"))
+	systray.SetTitle(p.Sprintf("😷 %d  ☠️ %d 🥳 %d", a.data.Active, a.data.Deaths, a.data.Recovered))
 
 	if a.CurrentCountryItem != nil {
 		currentMsg := "Current stats: World"
