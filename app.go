@@ -55,6 +55,10 @@ func (a *App) PopulateCountries() {
 			log.Fatal(err)
 		}
 
+		worldItem := a.PickACountryItem.AddSubMenuItem("World", "")
+		a.PickACountryItem.AddSubMenuItem("---------------", "").Disable()
+		go a.listenForCountrySelection("", worldItem)
+
 		for _, c := range countries {
 			countryItem := a.PickACountryItem.AddSubMenuItem(c.Country, "")
 			go a.listenForCountrySelection(c.Country, countryItem)
@@ -118,11 +122,13 @@ func (a *App) listenForCountrySelection(country string, item *systray.MenuItem) 
 }
 
 func (a *App) updateUI() {
-	systray.SetTitle(fmt.Sprintf("😷 %d  ☠️ %d  %d", a.data.Active, a.data.Deaths, a.data.Recovered))
+	systray.SetTitle(fmt.Sprintf("😷 %d  ☠️ %d 🥳 %d", a.data.Active, a.data.Deaths, a.data.Recovered))
 
-	if a.country != "" {
-		a.CurrentCountryItem.SetTitle(fmt.Sprintf("Current stats: %s", a.country))
-	} else {
-		a.CurrentCountryItem.SetTitle("Current stats: World")
+	if a.CurrentCountryItem != nil {
+		currentMsg := "Current stats: World"
+		if a.country != "" {
+			currentMsg = fmt.Sprintf("Current stats: %s", a.country)
+		}
+		a.CurrentCountryItem.SetTitle(currentMsg)
 	}
 }
