@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/flexicon/quickcovids/covid"
@@ -18,6 +19,7 @@ type App struct {
 	data     *covid.Stats
 
 	CurrentCountryItem *systray.MenuItem
+	TotalCasesItem     *systray.MenuItem
 	PickACountryItem   *systray.MenuItem
 	RefreshItem        *systray.MenuItem
 }
@@ -57,7 +59,7 @@ func (a *App) PopulateCountries() {
 		}
 
 		worldItem := a.PickACountryItem.AddSubMenuItem("World", "")
-		a.PickACountryItem.AddSubMenuItem("---------------", "").Disable()
+		a.PickACountryItem.AddSubMenuItem(strings.Repeat("-", 10), "").Disable()
 		go a.listenForCountrySelection("", worldItem)
 
 		for _, c := range countries {
@@ -73,7 +75,6 @@ func (a *App) RefreshData() {
 		return
 	}
 	log.Println("Fetching data...")
-	a.toggleFetchingState()
 
 	data, err := a.fetchData()
 	if err != nil {
@@ -86,7 +87,6 @@ func (a *App) RefreshData() {
 	log.Printf("Data fetched: %+v\n", data)
 	a.data = data
 	a.updateUI()
-	a.toggleFetchingState()
 }
 
 // Quit does any necessary App cleanups and quits the systray
@@ -99,18 +99,6 @@ func (a *App) fetchData() (*covid.Stats, error) {
 		return a.covid.FetchDataForCountry(a.country)
 	}
 	return a.covid.FetchWorldwideData()
-}
-
-func (a *App) toggleFetchingState() {
-	a.fetching = !a.fetching
-
-	if a.RefreshItem != nil {
-		if a.fetching {
-			a.RefreshItem.Disable()
-		} else {
-			a.RefreshItem.Enable()
-		}
-	}
 }
 
 func (a *App) listenForCountrySelection(country string, item *systray.MenuItem) {
@@ -132,5 +120,9 @@ func (a *App) updateUI() {
 			currentMsg = fmt.Sprintf("Current stats: %s", a.country)
 		}
 		a.CurrentCountryItem.SetTitle(currentMsg)
+	}
+
+	if a.TotalCasesItem != nil {
+		a.TotalCasesItem.SetTitle(p.Sprintf("Cases: %d", a.data.Cases))
 	}
 }

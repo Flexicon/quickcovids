@@ -21,10 +21,12 @@ func onReady(app *App) func() {
 		mCurrent := systray.AddMenuItem("Current stats: World", "Where the current dataset comes from")
 		mCurrent.Disable()
 
+		mTotalCases := systray.AddMenuItem("Cases: -", "Total cases for the current dataset")
+		mTotalCases.Disable()
+
 		systray.AddSeparator()
 
 		mPick := systray.AddMenuItem("Pick a country", "Select country to fetch data from")
-
 		mRefresh := systray.AddMenuItem("Refresh", "Fetch fresh data")
 
 		systray.AddSeparator()
@@ -32,6 +34,7 @@ func onReady(app *App) func() {
 		mQuit := systray.AddMenuItem("Quit", "")
 
 		app.CurrentCountryItem = mCurrent
+		app.TotalCasesItem = mTotalCases
 		app.PickACountryItem = mPick
 		app.RefreshItem = mRefresh
 
