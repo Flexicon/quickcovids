@@ -33,11 +33,11 @@ func onReady(app *covid.App) func() {
 		systray.SetTooltip("Quick Covid Stats")
 
 		i := setupMenuItems()
-		handleItemClicks(app, i)
-		populateCountries(app, i)
+		go handleItemClicks(app, i)
+		go populateCountries(app, i)
 
-		app.Sub(listenForUpdates(i))
-		app.BeginDataPolling()
+		updatesCh := app.BeginDataPolling()
+		go listenForUpdates(updatesCh, i)
 
 		log.Println("Ready and set up!")
 	}
@@ -73,32 +73,28 @@ func setupMenuItems() *menuItems {
 }
 
 func handleItemClicks(app *covid.App, i *menuItems) {
-	go func() {
-		for {
-			select {
-			case <-i.refresh.ClickedCh:
-				app.RefreshData()
-			case <-i.quit.ClickedCh:
-				systray.Quit()
-			}
+	for {
+		select {
+		case <-i.refresh.ClickedCh:
+			app.RefreshData()
+		case <-i.quit.ClickedCh:
+			systray.Quit()
 		}
-	}()
+	}
 }
 
 func populateCountries(a *covid.App, i *menuItems) {
-	go func() {
-		names := a.PrepareCountryNames()
+	names := a.PrepareCountryNames()
 
-		worldItem := i.pick.AddSubMenuItem("World", "")
-		go listenForCountrySelection(a, "", worldItem)
+	worldItem := i.pick.AddSubMenuItem("World", "")
+	go listenForCountrySelection(a, "", worldItem)
 
-		i.pick.AddSubMenuItem(strings.Repeat("-", getMaxNameLength(names)+1), "") // Separator
+	i.pick.AddSubMenuItem(strings.Repeat("-", getMaxNameLength(names)+1), "") // Separator
 
-		for _, c := range names {
-			countryItem := i.pick.AddSubMenuItem(c, "")
-			go listenForCountrySelection(a, c, countryItem)
-		}
-	}()
+	for _, c := range names {
+		countryItem := i.pick.AddSubMenuItem(c, "")
+		go listenForCountrySelection(a, c, countryItem)
+	}
 }
 
 func listenForCountrySelection(a *covid.App, c string, ci *systray.MenuItem) {
@@ -119,24 +115,18 @@ func getMaxNameLength(names []string) int {
 	return max
 }
 
-func listenForUpdates(i *menuItems) chan covid.AppData {
-	updateUI := make(chan covid.AppData)
+func listenForUpdates(updatesCh chan covid.AppData, i *menuItems) {
+	for d := range updatesCh {
+		systray.SetTitle(d.GetTitle())
+		i.current.SetTitle(fmt.Sprintf("Current stats: %s", d.GetSource()))
+		i.total.SetTitle(fmt.Sprintf("Cases: %s", d.GetCases()))
 
-	go func() {
-		for d := range updateUI {
-			systray.SetTitle(d.GetTitle())
-			i.current.SetTitle(fmt.Sprintf("Current stats: %s", d.GetSource()))
-			i.total.SetTitle(fmt.Sprintf("Cases: %s", d.GetCases()))
-
-			if d.IsFetching() {
-				i.pick.Disable()
-				i.refresh.Disable()
-			} else {
-				i.pick.Enable()
-				i.refresh.Enable()
-			}
+		if d.IsFetching() {
+			i.pick.Disable()
+			i.refresh.Disable()
+		} else {
+			i.pick.Enable()
+			i.refresh.Enable()
 		}
-	}()
-
-	return updateUI
+	}
 }

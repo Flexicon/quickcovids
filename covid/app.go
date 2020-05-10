@@ -17,19 +17,19 @@ type App struct {
 	covid    StatsAPI
 	country  string
 	fetching bool
-
-	listeners []chan AppData
+	updateUI chan AppData
 }
 
 // NewApp builder
 func NewApp(c StatsAPI) *App {
 	return &App{
-		covid: c,
+		covid:    c,
+		updateUI: make(chan AppData),
 	}
 }
 
 // BeginDataPolling to keep stats up to date asynchronously
-func (a *App) BeginDataPolling() {
+func (a *App) BeginDataPolling() chan AppData {
 	t := time.NewTicker(time.Minute * 30)
 
 	go func() {
@@ -42,6 +42,8 @@ func (a *App) BeginDataPolling() {
 			}
 		}
 	}()
+
+	return a.updateUI
 }
 
 // PrepareCountryNames fetches and prepares a list of available countries
@@ -74,7 +76,7 @@ func (a *App) RefreshData() {
 	}
 	log.Println("Fetching data...")
 	a.fetching = true
-	a.pub(&appData{fetching: a.fetching})
+	go a.emitUpdate(&appData{fetching: a.fetching})
 
 	data, err := a.fetchStats()
 	if err != nil {
@@ -86,22 +88,14 @@ func (a *App) RefreshData() {
 
 	log.Printf("Data fetched: %+v\n", data)
 	a.fetching = false
-	a.pub(&appData{
+	go a.emitUpdate(&appData{
 		*data,
 		a.fetching,
 	})
 }
 
-// Sub to app state/data changes
-func (a *App) Sub(c chan AppData) {
-	a.listeners = append(a.listeners, c)
-}
-
-// Publish data changes to all subscribers
-func (a *App) pub(d AppData) {
-	for _, c := range a.listeners {
-		c <- d
-	}
+func (a *App) emitUpdate(d *appData) {
+	a.updateUI <- d
 }
 
 func (a *App) fetchStats() (*Stats, error) {
