@@ -107,6 +107,14 @@ func listenForUpdates(i *menuItems) chan covid.AppData {
 			systray.SetTitle(d.GetTitle())
 			i.current.SetTitle(fmt.Sprintf("Current stats: %s", d.GetSource()))
 			i.total.SetTitle(fmt.Sprintf("Cases: %s", d.GetCases()))
+
+			if d.IsFetching() {
+				i.pick.Disable()
+				i.refresh.Disable()
+			} else {
+				i.pick.Enable()
+				i.refresh.Enable()
+			}
 		}
 	}()
 

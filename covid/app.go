@@ -66,6 +66,8 @@ func (a *App) RefreshData() {
 		return
 	}
 	log.Println("Fetching data...")
+	a.fetching = true
+	a.pub(&appData{fetching: a.fetching})
 
 	data, err := a.fetchData()
 	if err != nil {
@@ -76,7 +78,11 @@ func (a *App) RefreshData() {
 	}
 
 	log.Printf("Data fetched: %+v\n", data)
-	a.pub(data)
+	a.fetching = false
+	a.pub(&appData{
+		*data,
+		a.fetching,
+	})
 }
 
 // Sub to app state/data changes
@@ -85,9 +91,9 @@ func (a *App) Sub(c chan AppData) {
 }
 
 // Publish data changes to all subscribers
-func (a *App) pub(d *Stats) {
+func (a *App) pub(d AppData) {
 	for _, c := range a.listeners {
-		c <- &appData{*d}
+		c <- d
 	}
 }
 
