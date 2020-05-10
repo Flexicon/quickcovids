@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/flexicon/quickcovids/covid"
 	"github.com/getlantern/systray"
@@ -87,16 +89,34 @@ func populateCountries(a *covid.App, i *menuItems) {
 	go func() {
 		names := a.PrepareCountryNames()
 
+		worldItem := i.pick.AddSubMenuItem("World", "")
+		go listenForCountrySelection(a, "", worldItem)
+
+		i.pick.AddSubMenuItem(strings.Repeat("-", getMaxNameLength(names)+1), "") // Separator
+
 		for _, c := range names {
 			countryItem := i.pick.AddSubMenuItem(c, "")
-
-			go func(country string) {
-				for range countryItem.ClickedCh {
-					a.SelectCountry(country)
-				}
-			}(c)
+			go listenForCountrySelection(a, c, countryItem)
 		}
 	}()
+}
+
+func listenForCountrySelection(a *covid.App, c string, ci *systray.MenuItem) {
+	for range ci.ClickedCh {
+		a.SelectCountry(c)
+	}
+}
+
+func getMaxNameLength(names []string) int {
+	var max int
+	for _, n := range names {
+		count := utf8.RuneCountInString(n)
+		if count > max {
+			max = count
+		}
+	}
+
+	return max
 }
 
 func listenForUpdates(i *menuItems) chan covid.AppData {
