@@ -50,6 +50,9 @@ type Stats struct {
 
 	// Count of total tests done
 	Tests int `json:"tests"`
+
+	// The country for which the dataset is for, only present when fetching data for a specific country
+	Country string `json:"country,omitempty"`
 }
 
 // Country represents the data for a country in the api
