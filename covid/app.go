@@ -5,9 +5,16 @@ import (
 	"time"
 )
 
+// StatsAPI represents the interface for communicating with the covid API
+type StatsAPI interface {
+	FetchCountries() (CountriesResponse, error)
+	FetchWorldwideData() (*Stats, error)
+	FetchDataForCountry(country string) (*Stats, error)
+}
+
 // App represents the covid stats application state
 type App struct {
-	covid    *Service
+	covid    StatsAPI
 	country  string
 	fetching bool
 
@@ -15,7 +22,7 @@ type App struct {
 }
 
 // NewApp builder
-func NewApp(c *Service) *App {
+func NewApp(c StatsAPI) *App {
 	return &App{
 		covid: c,
 	}
@@ -69,7 +76,7 @@ func (a *App) RefreshData() {
 	a.fetching = true
 	a.pub(&appData{fetching: a.fetching})
 
-	data, err := a.fetchData()
+	data, err := a.fetchStats()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -97,7 +104,7 @@ func (a *App) pub(d AppData) {
 	}
 }
 
-func (a *App) fetchData() (*Stats, error) {
+func (a *App) fetchStats() (*Stats, error) {
 	if a.country != "" {
 		return a.covid.FetchDataForCountry(a.country)
 	}

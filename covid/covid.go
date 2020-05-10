@@ -9,13 +9,17 @@ import (
 
 const baseURL = "https://corona.lmao.ninja/v2"
 
-// Service is used to communicate with the corona stats API
-type Service struct {
-	client *http.Client
+type httpClient interface {
+	Get(string) (*http.Response, error)
 }
 
-// NewCovidService builder
-func NewCovidService() *Service {
+// Service is used to communicate with the corona stats API
+type Service struct {
+	client httpClient
+}
+
+// NewService builder
+func NewService() *Service {
 	return &Service{
 		client: &http.Client{Timeout: time.Second * 10},
 	}
@@ -30,12 +34,6 @@ type Stats struct {
 	// Count of total cases
 	Cases int `json:"cases"`
 
-	// Count of today's new cases
-	TodayCases int `json:"todayCases"`
-
-	// Count of today's deaths
-	TodayDeaths int `json:"todayDeaths"`
-
 	// Count of total deaths
 	Deaths int `json:"deaths"`
 
@@ -44,12 +42,6 @@ type Stats struct {
 
 	// Count of total active cases
 	Active int `json:"active"`
-
-	// Count of total critical cases
-	Critical int `json:"critical"`
-
-	// Count of total tests done
-	Tests int `json:"tests"`
 
 	// The country for which the dataset is for, only present when fetching data for a specific country
 	Country string `json:"country,omitempty"`

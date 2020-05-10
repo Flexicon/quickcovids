@@ -19,7 +19,7 @@ type menuItems struct {
 func main() {
 	log.Println("Setting up...")
 
-	c := covid.NewCovidService()
+	c := covid.NewService()
 	app := covid.NewApp(c)
 
 	systray.Run(onReady(app), onExit)
